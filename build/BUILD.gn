@@ -1,0 +1,12 @@
+
+config("c_default_config") {
+  cflags_c = [
+    "-std=gnu17",
+  ]
+  cflags = [
+    "-Wall",
+    "-O0",
+    "-g"
+  ]
+}
+

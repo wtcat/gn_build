@@ -1,0 +1,21 @@
+
+target_os = "linux"
+
+declare_args() {
+  has_fpu = false
+}
+
+default_config = ["//build:c_default_config"]
+
+set_defaults("executable") {
+  configs = default_config
+}
+
+set_defaults("static_library") {
+  configs = default_config
+}
+
+
+print("${target_os}")
+
+set_default_toolchain("//build/toolchain/linux:x64")
