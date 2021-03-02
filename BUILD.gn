@@ -1,0 +1,15 @@
+
+group("app") {
+  deps = [
+    "//src:main",
+    "//test",
+    "//lib:c1",
+    "//lib:c2"
+  ]
+}
+
+config("header_path") {
+  include_dirs = [
+    "//"
+  ]
+}
