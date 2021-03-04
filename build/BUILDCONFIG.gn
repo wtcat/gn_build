@@ -1,21 +1,95 @@
 
-target_os = "linux"
+
+if (target_cpu == "") {
+  target_cpu = "x64"
+}
+if (host_os == "") {
+  host_os = "linux"
+}
 
 declare_args() {
-  has_fpu = false
+  custom_toolchain = ""
 }
 
-default_config = ["//build:c_default_config"]
+# =============================================================================
+# BUILD FLAGS
+# =============================================================================
+declare_args() {
+  is_debug = true
+}
+
+# ==============================================================================
+# TOOLCHAIN SETUP
+# ==============================================================================
+if (host_os == "linux") {
+  _default_toolchain = "//build/toolchain/linux:$target_cpu"
+} else {
+  assert(false, "Unsupported host_os: $host_os")
+}
+
+if (custom_toolchain != "") {
+  set_default_toolchain(custom_toolchain)
+} else if (_default_toolchain != "") {
+  set_default_toolchain(_default_toolchain)
+}
+
+# =============================================================================
+# TARGET DEFAULTS
+# =============================================================================
+default_compiler_configs = [
+  "//build/config:feature_flags",
+  "//build:compiler",
+  "//build:default_include_dirs",
+  "//build:default_optimization",
+  "//build:default_stack_frames",
+  "//build:no_exceptions",
+  "//build:no_rtti",
+]
+
+_linker_configs = []
+
+# =============================================================================
+# Debug/release-related defines.
+# =============================================================================
+if (is_debug) {
+  default_compiler_configs += [ "//build/config:debug" ]
+} else {
+  default_compiler_configs += [ "//build/config:release" ]
+}
+
+# =============================================================================
+# Static libraries and source sets use only the compiler ones.
+# =============================================================================
+set_defaults("static_library") {
+  configs = default_compiler_configs
+}
+set_defaults("source_set") {
+  configs = default_compiler_configs
+}
+
+# =============================================================================
+# Executable defaults.
+# =============================================================================
+default_executable_configs = default_compiler_configs
+default_executable_configs += ["//build/config:default_libs",
+                               "//build/config:executable_config"
+                             ]
+default_executable_configs += _linker_configs
 
 set_defaults("executable") {
-  configs = default_config
+  configs = default_executable_configs
 }
 
-set_defaults("static_library") {
-  configs = default_config
-}
+# =============================================================================
+# Shared library and loadable module defaults (also for components in component
+# mode).
+# =============================================================================
+default_shared_library_configs = default_compiler_configs
+default_shared_library_configs += ["//build/config:default_libs",
+                                   "//build/config:shared_library_config"
+                                 ]        
+default_shared_library_configs += _linker_configs
+set_defaults("shared_library") {
+  configs = default_shared_library_configs
+} 
 
-
-print("${target_os}")
-
-set_default_toolchain("//build/toolchain/linux:x64")

@@ -1,10 +1,3 @@
-# Copyright (c) 2013 The Chromium Authors. All rights reserved.
-# Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
-
-
-generate_linker_map = true
-is_official_build = false
 
 # This template defines a toolchain for something that works like gcc
 # (including clang).
@@ -67,7 +60,7 @@ template("gcc_toolchain") {
     assert(defined(invoker.cc), "gcc_toolchain() must specify a \"cc\" value")
     assert(defined(invoker.cxx), "gcc_toolchain() must specify a \"cxx\" value")
     assert(defined(invoker.ld), "gcc_toolchain() must specify a \"ld\" value")
-
+   
     # This define changes when the toolchain changes, forcing a rebuild.
     # Nothing should ever use this define.
     if (defined(invoker.rebuild_define)) {
@@ -95,24 +88,13 @@ template("gcc_toolchain") {
 
     }
 
-    # When the invoker has explicitly overridden use_goma or cc_wrapper in the
-    # toolchain args, use those values, otherwise default to the global one.
-    # This works because the only reasonable override that toolchains might
-    # supply for these values are to force-disable them.
-    # But if needs_gomacc_path_arg is set in a Chrome OS build, the toolchain
-    # wrapper will have picked up gomacc via cmd-line arg. So need to prepend
-    # gomacc in that case.
-    goma_ld = ""
     compiler_prefix = ""
-
-    # Create a distinct variable for "asm", since coverage runs pass a bunch of
-    # flags to clang/clang++ that are nonsensical on assembler runs.
     asm_prefix = compiler_prefix
     cc = compiler_prefix + invoker.cc
     cxx = compiler_prefix + invoker.cxx
     asm = asm_prefix + invoker.cc
     ar = invoker.ar
-    ld = "$goma_ld${invoker.ld}"
+    ld = "${invoker.ld}"
     
 #    if (defined(invoker.readelf)) {
 #      readelf = invoker.readelf
@@ -176,7 +158,9 @@ template("gcc_toolchain") {
       extra_ldflags = ""
     }
 
-
+    lib_switch = "-l"
+    lib_dir_switch = "-L"
+    
     # Object files go in this directory.
     object_subdir = "{{target_out_dir}}/{{label_name}}"
 
@@ -208,28 +192,13 @@ template("gcc_toolchain") {
     }
 
     tool("alink") {
-      if (current_os == "aix") {
-        # AIX does not support either -D (deterministic output) or response
-        # files.
-        command = "$ar -X64 {{arflags}} -r -c -s {{output}} {{inputs}}"
-      } else {
-        rspfile = "{{output}}.rsp"
-        rspfile_content = "{{inputs}}"
-        command = "\"$ar\" {{arflags}} -r -c -s -D {{output}} @\"$rspfile\""
-      }
-
-      # Remove the output file first so that ar doesn't try to modify the
-      # existing file.
+      rspfile = "{{output}}.rsp"
+      rspfile_content = "{{inputs}}"
+      command = "\"$ar\" {{arflags}} -r -c -s -D {{output}} @\"$rspfile\""
       command = "rm -f {{output}} && $command"
-
-      # Almost all targets build with //build/config/compiler:thin_archive which
-      # adds -T to arflags.
       description = "AR {{output}}"
       outputs = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
-
-      # Shared libraries go in the target out directory by default so we can
-      # generate different targets with the same name and not have them collide.
-      default_output_dir = "{{target_out_dir}}"
+      default_output_dir = "{{root_out_dir}}"
       default_output_extension = ".a"
       output_prefix = "lib"
     }
@@ -238,7 +207,6 @@ template("gcc_toolchain") {
       soname = "{{target_output_name}}{{output_extension}}"  # e.g. "libfoo.so".
       sofile = "{{output_dir}}/$soname"  # Possibly including toolchain dir.
       rspfile = sofile + ".rsp"
-
       if (defined(invoker.strip)) {
         unstripped_sofile = "{{root_out_dir}}/lib.unstripped/$soname"
       } else {
@@ -246,8 +214,6 @@ template("gcc_toolchain") {
       }
 
       command = "$ld -shared -Wl,-soname=\"$soname\" {{ldflags}}${extra_ldflags} -o \"$unstripped_sofile\" @\"$rspfile\""
-#      assert(defined(readelf), "to solink you must have a readelf")
-#      assert(defined(nm), "to solink you must have an nm")
       rspfile_content = "-Wl,--whole-archive {{inputs}} {{solibs}} -Wl,--no-whole-archive {{libs}}"
       description = "SOLINK $sofile"
       default_output_extension = default_shlib_extension
@@ -257,9 +223,6 @@ template("gcc_toolchain") {
       outputs = [
         sofile
       ]
-      if (defined(map_file)) {
-        outputs += [ map_file ]
-      }
       link_output = sofile
       depend_output = sofile
     }
@@ -275,14 +238,8 @@ template("gcc_toolchain") {
         unstripped_outfile = "{{root_out_dir}}/exe.unstripped/$exename"
       }
 
-      start_group_flag = ""
-      end_group_flag = ""
-      if (current_os != "aix") {
-        # the "--start-group .. --end-group" feature isn't available on the aix ld.
-        start_group_flag = "-Wl,--start-group"
-        end_group_flag = "-Wl,--end-group "
-      }
-      
+      start_group_flag = "-Wl,--start-group"
+      end_group_flag = "-Wl,--end-group "
       command = "$ld {{ldflags}}${extra_ldflags} -o \"$unstripped_outfile\" $start_group_flag @\"$rspfile\" {{solibs}} $end_group_flag {{libs}}"
       description = "LINK $outfile"
       rspfile_content = "{{inputs}}"
@@ -290,14 +247,8 @@ template("gcc_toolchain") {
       if (defined(invoker.link_outputs)) {
         outputs += invoker.link_outputs
       }
-      if (defined(map_file)) {
-        outputs += [ map_file ]
-      }
     }
 
-    # These two are really entirely generic, but have to be repeated in
-    # each toolchain because GN doesn't allow a template to be used here.
-    # See //build/toolchain/toolchain.gni for details.
     tool("stamp") {
       command = "touch {{output}}"
       description = "STAMP {{output}}"
