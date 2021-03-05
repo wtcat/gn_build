@@ -20,7 +20,7 @@ declare_args() {
 # TOOLCHAIN SETUP
 # ==============================================================================
 if (host_os == "linux") {
-  _default_toolchain = "//build/toolchain/linux:$target_cpu"
+  _default_toolchain = "//build/toolchain/$target_os:$target_cpu"
 } else {
   assert(false, "Unsupported host_os: $host_os")
 }

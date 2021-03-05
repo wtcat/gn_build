@@ -159,10 +159,10 @@ template("gcc_toolchain") {
       extra_ldflags = ""
     }
     
-    if (defined(invoker.generate_map) && invoker.generate_map) {
-      generate_map = true 
+    if (defined(invoker.enable_linker_map) && invoker.enable_linker_map) {
+      enable_linker_map = true 
     } else {
-      generate_map = false
+      enable_linker_map = false
     }
 
     lib_switch = "-l"
@@ -237,7 +237,7 @@ template("gcc_toolchain") {
       start_group_flag = "-Wl,--start-group"
       end_group_flag = "-Wl,--end-group "
       
-      if (generate_map) {
+      if (enable_linker_map) {
         extra_ldflags += " -Wl,-Map={{target_output_name}}_map"
       }
       command = "$ld {{ldflags}}${extra_ldflags} -o $outfile $start_group_flag @$rspfile {{solibs}} $end_group_flag {{libs}}"

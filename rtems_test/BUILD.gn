@@ -1,0 +1,5 @@
+executable("rtems_test") {
+  sources = ["smp_test.c"]
+  include_dirs = ["."]
+  libs = [ "rtemstest" ]
+}

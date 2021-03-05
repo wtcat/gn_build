@@ -3,23 +3,27 @@
 # found in the LICENSE file.
 
 import("//build/toolchain/gcc_toolchain.gni")
+import("//build/toolchain/rtems/rtems.gni")
 
 gcc_toolchain("arm") {
   toolprefix = "arm-rtems6-"
 
-  link_outputs = "rtems_map"
-  spec_flags = "-pipe -B${RTEMS_ROOT_DIR} -specs bsp_specs -qrtems"
-  extra_cppflags = "-Wall -Wimplicit-function-declaration -Wstrict-prototypes -fdata-sections -ffunction-sections"
+  spec_flags = "-B${rtems_path} -qrtems "
+  common_flags = "-Wall -Wimplicit-function-declaration -Wstrict-prototypes -fdata-sections -ffunction-sections"
+  extra_cppflags = spec_flags + common_flags
   extra_cflags = "-std=gnu17"
   extra_cxxflags = "-std=c++17"
   extra_asmflags = "-x assembler-with-cpp"
-  extra_ldflags = "-Wl,-Map=$link_outputs"
-  
+  extra_ldflags = spec_flags + "-Wl,-Bstatic -Wl,-Bdynamic"
+
   cc = "${toolprefix}gcc"
   cxx = "${toolprefix}g++"
   ar = "${toolprefix}ar"
-  ld = cxx
+  ld = cc
 
+  # Output linker map files for binary size analysis.
+  enable_linker_map = true
+  
   toolchain_args = {
     current_cpu = "arm"
     current_os = "rtems"

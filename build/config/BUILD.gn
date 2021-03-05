@@ -18,7 +18,13 @@ config("release") {
 
 # Default libraries ------------------------------------------------------------
 config("default_libs") {
-    libs = []
+  libs = []
+#  if (target_os == "rtems") {
+#    libs += [
+#      "rtemscpu",
+#      "rtemsbsp"
+#    ]
+#  }
 }
 
 group("common_deps") {

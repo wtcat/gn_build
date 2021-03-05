@@ -1,0 +1,9 @@
+#rtems args
+
+declare_args() {
+  #rtems target board
+  rtems_bsp = ""
+ 
+  #rtems library install path
+  rtems_path = ""
+}

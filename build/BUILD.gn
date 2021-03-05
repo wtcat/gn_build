@@ -1,5 +1,15 @@
 #declare_args() {}
 
+
+
+
+is_rtems = target_os == "rtems"
+#is_linux = target_os == "linux"
+
+if (is_rtems) {
+  import("//build/toolchain/rtems/rtems.gni")
+}
+
 #========================
 # CPU Architecture flags
 #========================
@@ -8,28 +18,34 @@ config("compiler_cpu_abi") {
   ldflags = []
   defines = []
   
-  if (target_cpu == "arm") {
-    if (target_board == "realview-pbx-a9" ||
-        target_board == "xilinx-zynq") {
-      cflags += ["-march=armv7-a", "-mfpu=neon", "-mfloat-abi=hard", "-mtune=cortex-a9"]
-      
-    } else if (target_board == "stm32f4") {
-      cflags += ["-mthumb", " -mcpu=cortex-m4"]
-      ldflags += ["-Wl,--gc-sections"]
-      
-    } else if (target_board == "stm32h7") {
-      cflags += ["-mthumb", "-mcpu=cortex-m7", "-mfpu=fpv5-d16", "-mfloat-abi=hard"]
+  if (is_rtems) {
+    if (target_cpu == "arm") {
+      if (rtems_bsp == "realview_pbx_a9_qemu" ||
+          rtems_bsp == "xilinx-zynq") {
+        cflags += ["-march=armv7-a", "-mthumb", "-mfpu=neon", "-mfloat-abi=hard", "-mtune=cortex-a9"]
+        
+      } else if (rtems_bsp == "stm32f4") {
+        cflags += ["-mthumb", "-mcpu=cortex-m4"]
+        ldflags += ["-Wl,--gc-sections"]
+        
+      } else if (rtems_bsp == "stm32h7") {
+        cflags += ["-mthumb", "-mcpu=cortex-m7", "-mfpu=fpv5-d16", "-mfloat-abi=hard"]
 
+      } else {
+        assert(false, "Unsupported target board")
+      }
     } else {
-      assert(false, "Unsupported target board")
+      assert(false, "Unsupported CPU architecture")
     }
-  } else if (target_cpu == "x86" ||
-             target_cpu == "x64") {
+  } else if (target_os == "linux") {
+    if (target_cpu != "x86" &&
+        target_cpu != "x64") {
+      assert(false, "Unsupported target cpu: $target_cpu")
+    }
+  } 
   
-  } else {
-    assert(false, "Unsupported CPU architecture")
-  }
   asmflags = cflags
+  ldflags = cflags
 }
 
 #========================
@@ -40,6 +56,10 @@ config("default_include_dirs") {
     "//",
     root_gen_dir,
   ]
+  
+  if (is_rtems) {
+    include_dirs += ["$rtems_path/include"]
+  }
 }
 
 #========================
@@ -64,10 +84,6 @@ config("compiler") {
 #========================
 # rtti
 #========================
-config("rtti") {
-  cflags_cc = [ "-frtti" ]
-}
-
 config("no_rtti") {
   cflags_cc = [ "-fno-rtti" ]
 }
@@ -75,14 +91,13 @@ config("no_rtti") {
 #========================
 # exceptions
 #========================
-config("exceptions") {
-  cflags_cc = [ "-fexceptions" ]
-}
-
 config("no_exceptions") {
   cflags_cc = [ "-fno-exceptions" ]
 }
 
+#========================
+# optimize
+#========================
 config("optimize") {
   if (is_debug) {
     cflags = ["-g", "-O0"]
