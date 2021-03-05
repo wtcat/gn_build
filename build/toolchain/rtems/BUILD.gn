@@ -1,0 +1,30 @@
+# Copyright 2013 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/toolchain/gcc_toolchain.gni")
+
+gcc_toolchain("arm") {
+  toolprefix = "arm-rtems6-"
+
+  link_outputs = "rtems_map"
+  spec_flags = "-pipe -B${RTEMS_ROOT_DIR} -specs bsp_specs -qrtems"
+  extra_cppflags = "-Wall -Wimplicit-function-declaration -Wstrict-prototypes -fdata-sections -ffunction-sections"
+  extra_cflags = "-std=gnu17"
+  extra_cxxflags = "-std=c++17"
+  extra_asmflags = "-x assembler-with-cpp"
+  extra_ldflags = "-Wl,-Map=$link_outputs"
+  
+  cc = "${toolprefix}gcc"
+  cxx = "${toolprefix}g++"
+  ar = "${toolprefix}ar"
+  ld = cxx
+
+  toolchain_args = {
+    current_cpu = "arm"
+    current_os = "rtems"
+  }
+}
+
+assert(target_cpu == "arm", "Unsupported cpu architecture!")
+

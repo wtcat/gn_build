@@ -1,17 +1,4 @@
-
-
 #declare_args() {}
-
-
-#========================
-# default_include_dirs
-#========================
-config("default_include_dirs") {
-  include_dirs = [
-    "//",
-    root_gen_dir,
-  ]
-}
 
 #========================
 # CPU Architecture flags
@@ -24,25 +11,15 @@ config("compiler_cpu_abi") {
   if (target_cpu == "arm") {
     if (target_board == "realview-pbx-a9" ||
         target_board == "xilinx-zynq") {
-      cflags += [
-        "-march=armv7-a",
-        "-mfpu=neon",
-        "-mfloat-abi=hard",
-        "-mtune=cortex-a9"
-      ]
+      cflags += ["-march=armv7-a", "-mfpu=neon", "-mfloat-abi=hard", "-mtune=cortex-a9"]
+      
     } else if (target_board == "stm32f4") {
-      cflags += [
-        "-mthumb",
-        " -mcpu=cortex-m4"
-      ]
+      cflags += ["-mthumb", " -mcpu=cortex-m4"]
       ldflags += ["-Wl,--gc-sections"]
+      
     } else if (target_board == "stm32h7") {
-      cflags += [
-        "-mthumb",
-        "-mcpu=cortex-m7",
-        "-mfpu=fpv5-d16",
-        "-mfloat-abi=hard"
-      ]
+      cflags += ["-mthumb", "-mcpu=cortex-m7", "-mfpu=fpv5-d16", "-mfloat-abi=hard"]
+
     } else {
       assert(false, "Unsupported target board")
     }
@@ -53,6 +30,16 @@ config("compiler_cpu_abi") {
     assert(false, "Unsupported CPU architecture")
   }
   asmflags = cflags
+}
+
+#========================
+# default_include_dirs
+#========================
+config("default_include_dirs") {
+  include_dirs = [
+    "//",
+    root_gen_dir,
+  ]
 }
 
 #========================
@@ -74,7 +61,6 @@ config("compiler") {
   ]
 }
 
-
 #========================
 # rtti
 #========================
@@ -83,48 +69,25 @@ config("rtti") {
 }
 
 config("no_rtti") {
-#  if (!use_rtti) {
-      cflags_cc = [ "-fno-rtti" ]
-      cflags_objcc = cflags_cc
-#  }
+  cflags_cc = [ "-fno-rtti" ]
 }
 
 #========================
 # exceptions
 #========================
 config("exceptions") {
-    cflags_cc = [ "-fexceptions" ]
-    cflags_objcc = cflags_cc
+  cflags_cc = [ "-fexceptions" ]
 }
 
 config("no_exceptions") {
   cflags_cc = [ "-fno-exceptions" ]
 }
 
-config("default_stack_frames") {
-  if (is_debug) {
-    cflags = [ "-fno-omit-frame-pointer" ]
-  } else {
-    cflags = [ "-fomit-frame-pointer" ]
-  }
-}
-
-config("default_optimization") {
-  cflags = [
-    "-g",
-    "-O0"
-  ]
-}
-
 config("optimize") {
-}
-
-config("no_optimize") {
-}
-
-config("optimize_max") {
-}
-
-config("optimize_speed") {
+  if (is_debug) {
+    cflags = ["-g", "-O0"]
+  } else {
+    cflags = ["-g", "-O2"]
+  }
 }
 

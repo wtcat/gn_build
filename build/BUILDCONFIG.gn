@@ -1,15 +1,13 @@
-
+import("//build/custom_toolchain.gni")
 
 if (target_cpu == "") {
   target_cpu = "x64"
 }
+
 if (host_os == "") {
   host_os = "linux"
 }
 
-declare_args() {
-  custom_toolchain = ""
-}
 
 # =============================================================================
 # BUILD FLAGS
@@ -40,8 +38,7 @@ default_compiler_configs = [
   "//build/config:feature_flags",
   "//build:compiler",
   "//build:default_include_dirs",
-  "//build:default_optimization",
-  "//build:default_stack_frames",
+  "//build:optimize",
   "//build:no_exceptions",
   "//build:no_rtti",
 ]
